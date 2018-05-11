@@ -10,14 +10,15 @@ import sys
 from image_restriction_functions import imgRestFuncs as Fxn
 from retrieve_image_data import RtrvData as Data
 
-'''
-Purpose:        The purpose of this function is to assert each restriction check
-Inputs:         dict exifData, object functions
-Outputs:        restriction check results
-Returns:        N/A
-Assumptions:    N/A
-'''
+
 def program(fxn, data, exifData, pathname):
+    '''
+    Purpose:        The purpose of this function is to assert each restriction check
+    Inputs:         dict exifData, object functions
+    Outputs:        restriction check results
+    Returns:        isVerified
+    Assumptions:    N/A
+    '''
     if not 'image model' in exifData:
         isVerified = {'meetsRest': False, 'error_message': "The image must be a mobile image from a supported device"}
         return isVerified
@@ -27,7 +28,7 @@ def program(fxn, data, exifData, pathname):
     if not fxn.is_edited(exifData['image datetime'], exifData['exif datetimeoriginal']):
         isVerified = {'meetsRest': False, 'error_message': "The image cannot be edited or filtered in any way"}
         return isVerified
-    if not fxn.is_landscape(data.get_rgb(pathname)):
+    if not fxn.is_landscape(pathname):
         isVerified = {'meetsRest': False, 'error_message': "The image must be of a direct landscape with a sky and view"}
         return isVerified
     if not fxn.is_size(exifData['file size']):
@@ -47,48 +48,51 @@ def program(fxn, data, exifData, pathname):
     isVerified = {'meetsRest': True, 'exifData': exifData, 'locExifData': locExifData}
     return isVerified
 
-'''
-Purpose:        The purpose of this main function is to check all image restrictions
-                for use in the Aerolyzer app.
-Inputs:         string filename of image locally
-Outputs:        None
-Returns:        N/A
-Assumptions:    N/A
-'''
-def check_image(filename):
+
+def check_image(filename,confPath="."):
+    '''
+    Purpose:        The purpose of this main function is to check all image restrictions
+                    for use in the Aerolyzer app.
+    Inputs:         string filename of image locally, optional string confPath
+    Outputs:        None
+    Returns:        isVerified
+    Assumptions:    N/A
+    '''
     #instantiate classes
-    fxn     = Fxn()
+    fxn     = Fxn(confPath)
     #Retrieve exif data
-    data    = Data(filename)
+    data    = Data(confPath)
     exifData = data.get_exif(filename, True, False)
     isVerified = program(fxn, data, exifData, filename)
     return isVerified
 
-'''
-Purpose:        The purpose of this main function is to check all image restrictions and
-                produce the correct error message should one occur.
-Inputs:         string image (as sys.argv[1])
-Outputs:        None
-Returns:        N/A
-Assumptions:    N/A
-'''
+
 def main():
+    '''
+    Purpose:        The purpose of this main function is to check all image restrictions and
+                    produce the correct error message should one occur.
+    Inputs:         string image (as sys.argv[1]), Config path(as sys.argv[2])
+    Outputs:        None
+    Returns:        N/A
+    Assumptions:    N/A
+    '''
     #instantiate classes
-    fxn     = Fxn()
+    
 
     #Retrieve exif data
     if(len(sys.argv) < 2):
-        #use default image
-        data    = Data("./images/good-images/1484949760_19_2615.jpg")
-        exifData = data.get_exif("./images/good-images/1484949760_19_2615.jpg", True, True)
-        program(fxn, data, exifData, "./images/good-images/1484949760_19_2615.jpg")
-    elif(len(sys.argv) == 2):
-        data    = Data(sys.argv[1])
-        exifData = data.get_exif(sys.argv[1], True, False)
-        program(fxn, data, exifData, sys.argv[1])
-    elif(len(sys.argv) > 2):
         #error
-        print "Please pass only 1 image to this program as an argument"
+        print "Please pass an image path as an argument with an optional config path"
+
+    elif(len(sys.argv) == 2):
+        check_image(sys.argv[1])
+
+    elif(len(sys.argv) == 3):
+        check_image(sys.argv[1],sys.argv[2])
+
+    elif(len(sys.argv) > 3):
+        #error
+        print "Please pass only 1 image to this program and an optional config path as arguments"
 
 if __name__ == '__main__':
     main()
